@@ -1,18 +1,28 @@
-from fastapi import FastAPI, Request, Form, Depends
-from fastapi.responses import HTMLResponse, JSONResponse
-from fastapi.encoders import jsonable_encoder
-from sqlalchemy.orm import Session
-from db import get_db
-from schema import Query
-import google.generativeai as genai
-
-import httpx
 import os
+
+import google.generativeai as genai
+import httpx
+from db import get_db
 from dotenv import load_dotenv
+from fastapi import Depends, FastAPI, Form, Request
+from fastapi.encoders import jsonable_encoder
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse, JSONResponse
+from models import QueryRequest
+from schema import Query
+from sqlalchemy.orm import Session
 
 load_dotenv()
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
@@ -35,16 +45,16 @@ async def index(req: Request):
 
 @app.post("/diagnose", response_class=JSONResponse)
 async def diagnose(
-    req: Request, symptoms: str = Form(...), db: Session = Depends(get_db)
+    request: QueryRequest, db: Session = Depends(get_db)
 ):
-    llm_text = await call_llm(PROMPT + "\n" + symptoms)
-    q = Query(symptoms=symptoms, response=llm_text)
+    llm_text = await call_llm(PROMPT + "\n" + request.symptoms)
+    q = Query(symptoms=request.symptoms, response=llm_text)
     db.add(q)
     db.commit()
     db.refresh(q)
 
     return JSONResponse(
-        content={"symptoms": symptoms, "response": llm_text},
+        content={"symptoms": request.symptoms, "response": llm_text},
         status_code=200,
     )
 

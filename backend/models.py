@@ -1,5 +1,6 @@
-from pydantic import BaseModel
 from datetime import datetime
+
+from pydantic import BaseModel
 
 
 class Query(BaseModel):
@@ -7,3 +8,6 @@ class Query(BaseModel):
     symptoms: str
     response: str
     created_at: datetime
+
+class QueryRequest(BaseModel):
+    symptoms: str
