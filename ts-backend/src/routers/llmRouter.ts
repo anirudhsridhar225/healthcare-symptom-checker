@@ -2,6 +2,7 @@ import { GoogleGenAI } from "@google/genai";
 import { z } from "zod";
 import { protectedProcedure, publicProcedure, router } from "../trpc.js";
 import { queries } from "../schema.js";
+import "dotenv/config"
 
 const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY || "" });
 
@@ -11,11 +12,12 @@ const PROMPT = "You are an educational medical assistant. Based on the given sym
 async function callGemini(prompt: string) {
 	const response = await ai.models.generateContent({
 		model: 'gemini-2.5-flash',
-		contents: PROMPT + prompt
+		contents: `${PROMPT}\n\nSymptoms: ${prompt}\n\n`,
 	})
 
 	console.log(response)
-	return response
+	const text = response.candidates?.[0]?.content?.parts?.[0]?.text || "No response generated"
+	return { text } 
 }
 
 export const llmRouter = router({
@@ -34,6 +36,13 @@ export const llmRouter = router({
 				})
 				.execute()
 
+			return { response: res }
+		}),
+
+	testpoint: publicProcedure
+		.input(z.object({ text: z.string() }))
+		.mutation(async ({ input }) => {
+			const res = await callGemini(input.text)
 			return { response: res }
 		})
 })
