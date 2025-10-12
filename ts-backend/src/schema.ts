@@ -1,4 +1,4 @@
-import { pgTable, serial, text, timestamp, boolean } from 'drizzle-orm/pg-core';
+import { pgEnum, pgTable, serial, text, timestamp, boolean, integer } from 'drizzle-orm/pg-core';
 
 export const user = pgTable("user", {
 	id: text("id").primaryKey(),
@@ -17,8 +17,16 @@ export const queries = pgTable('queries', {
 	id: serial('id').primaryKey(),
 	userId: text('user_id').notNull().references(() => user.id),
 	symptoms: text('symptoms').notNull(),
-	diagnosis: text('diagnosis').notNull(),
 	createdAt: timestamp('created_at').defaultNow().notNull(),
+})
+
+export const roleEnum = pgEnum("role", ['user', 'assistant'])
+
+export const chats = pgTable('chats', {
+	id: serial('id').primaryKey(),
+	queryId: integer('query_id').notNull().references(() => queries.id),
+	role: roleEnum('role').notNull(),
+	content: text('content').notNull(),
 })
 
 export const session = pgTable("session", {
