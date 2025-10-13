@@ -4,6 +4,7 @@ import { useMutation } from '@tanstack/react-query'
 import { authClient } from '@/lib/auth-client'
 import MessageList from './chat/message-list'
 import ChatInput from './chat/chat-input'
+import { useNavigate, useParams } from 'react-router-dom'
 
 type ChatMessage = {
 	role: 'user' | 'assistant'
@@ -17,7 +18,38 @@ type UIMessage = {
 	parts: { type: 'text'; text: string }[]
 }
 
-const sendChatMessage = async (data: { message: string, chatHistory: Array<{ role: string, content: string }> }) => {
+type MutationInput = {
+	text: string
+	chatId?: string | null
+}
+
+type StartChatResponse = {
+	chat_id: string
+	response: { text: string }
+	chatHistory: Array<{ role: 'user' | 'assistant'; content: string }>
+}
+
+type ChatResponse = {
+	response: { text: string }
+	chatHistory: Array<{ role: 'user' | 'assistant'; content: string }>
+}
+
+const sendMessage = async (data: MutationInput): Promise<{ kind: 'start' | 'chat'; payload: StartChatResponse | ChatResponse }> => {
+	if (!data.chatId) {
+		const response = await authClient.$fetch('http://localhost:4000/api/trpc/llm.startChat?batch=1', {
+			method: 'POST',
+			headers: {
+				'content-type': 'application/json',
+			},
+			body: JSON.stringify({
+				0: {
+					json: { symptoms: data.text }
+				}
+			})
+		}) as any
+		const json = response.data[0].result.data.json as StartChatResponse
+		return { kind: 'start', payload: json }
+	}
 	const response = await authClient.$fetch('http://localhost:4000/api/trpc/llm.chat?batch=1', {
 		method: 'POST',
 		headers: {
@@ -25,30 +57,64 @@ const sendChatMessage = async (data: { message: string, chatHistory: Array<{ rol
 		},
 		body: JSON.stringify({
 			0: {
-				json: {
-					message: data.message,
-					chatHistory: data.chatHistory
-				}
+				json: { chatId: data.chatId, query: data.text }
 			}
 		})
 	}) as any
-
-	return response.data[0].result.data.json
+	const json = response.data[0].result.data.json as ChatResponse
+	return { kind: 'chat', payload: json }
 }
 
 export const DiagnoseForm: React.FC<{
 	quickPrompt?: string
 	onQuickPromptUsed?: () => void
-	resetKey?: number
-}> = ({ quickPrompt, onQuickPromptUsed, resetKey }) => {
+}> = ({ quickPrompt, onQuickPromptUsed }) => {
 	const { user } = useAuth()
+	const navigate = useNavigate()
+	const params = useParams()
+	const routeChatId = params.chatId === 'new' ? null : (params.chatId ?? null)
 	const [messages, setMessages] = useState<ChatMessage[]>([])
+	const [chatId, setChatId] = useState<string | null>(routeChatId)
 
 	useEffect(() => {
-		if (resetKey !== undefined) {
-			setMessages([])
+		let cancelled = false
+		async function load() {
+			if (routeChatId) {
+				try {
+					const response = await authClient.$fetch(
+						`http://localhost:4000/api/trpc/llm.getChat?batch=1&input=${encodeURIComponent(
+							JSON.stringify({ 0: { json: { chatId: routeChatId } } })
+						)}`,
+						{
+							method: 'GET',
+							headers: { 'content-type': 'application/json' },
+						}
+					) as any
+
+					const json = response.data[0].result.data.json as { chat: any, messages: Array<{ role: 'user' | 'assistant'; content: string; createdAt?: string; created_at?: string }> }
+
+					const ordered = [...json.messages].reverse()
+
+					if (!cancelled) {
+						setChatId(routeChatId)
+						setMessages(ordered.map((m, idx) => ({
+							role: m.role,
+							content: m.content,
+							timestamp: new Date((m as any).createdAt ?? (m as any).created_at ?? Date.now())
+						})))
+					}
+
+				} catch (e) {
+					console.error('Failed to load chat', e)
+				}
+			} else {
+				setChatId(null)
+				setMessages([])
+			}
 		}
-	}, [resetKey])
+		load()
+		return () => { cancelled = true }
+	}, [routeChatId])
 
 	if (!user) {
 		return (
@@ -61,16 +127,23 @@ export const DiagnoseForm: React.FC<{
 	}
 
 	const mutation = useMutation({
-		mutationFn: sendChatMessage,
+		mutationFn: sendMessage,
 		onSuccess: (data) => {
-			setMessages(prev => [
-				...prev,
-				{
-					role: 'assistant',
-					content: data.response.text,
-					timestamp: new Date()
-				}
-			])
+			if (data.kind === 'start') {
+				const payload = data.payload as StartChatResponse
+				setChatId(payload.chat_id)
+				navigate(`/chats/${payload.chat_id}`, { replace: true })
+				setMessages(prev => ([
+					...prev,
+					{ role: 'assistant', content: payload.response.text, timestamp: new Date() }
+				]))
+			} else {
+				const payload = data.payload as ChatResponse
+				setMessages(prev => ([
+					...prev,
+					{ role: 'assistant', content: payload.response.text, timestamp: new Date() }
+				]))
+			}
 		},
 		onError: (err: unknown) => console.error(err)
 	})
@@ -81,13 +154,8 @@ export const DiagnoseForm: React.FC<{
 			content: text,
 			timestamp: new Date()
 		}
-
 		setMessages(prev => [...prev, userMessage])
-
-		mutation.mutate({
-			message: text,
-			chatHistory: messages.map(m => ({ role: m.role, content: m.content }))
-		})
+		mutation.mutate({ text, chatId })
 	}
 
 	const uiMessages: UIMessage[] = messages.map((msg, idx) => ({

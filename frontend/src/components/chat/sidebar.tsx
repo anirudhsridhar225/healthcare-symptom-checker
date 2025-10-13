@@ -3,50 +3,52 @@ import { Card } from "@/components/ui/card"
 import { useQuery } from '@tanstack/react-query'
 import { authClient } from '@/lib/auth-client'
 
-type HistoryItem = {
-	id: number
-	userId: string
+type ChatItem = {
+	id: string
 	symptoms: string
 	createdAt: string
 }
 
-type HistoryResponse = {
+type ChatsResponse = {
 	data: Array<{
 		result: {
 			data: {
-				json: {
-					records: Array<HistoryItem>
-				}
+				json: ChatItem[]
 			}
 		}
 	}>
 }
 
-const fetchHistory = async (): Promise<HistoryItem[]> => {
-	const response = await authClient.$fetch('http://localhost:4000/api/trpc/user.history?batch=1', {
+const fetchChats = async (): Promise<ChatItem[]> => {
+	const response = await authClient.$fetch('http://localhost:4000/api/trpc/llm.getAllChats?batch=1', {
 		method: 'GET',
 		headers: {
 			'content-type': 'application/json',
 		},
-	}) as HistoryResponse
+	}) as ChatsResponse
 
-	return response.data[0].result.data.json.records
+	return response.data[0].result.data.json
 }
+
+import { useNavigate } from 'react-router-dom'
 
 export default function Sidebar({
 	onNewChat,
 }: {
 	onNewChat: () => void
 }) {
+	const navigate = useNavigate()
 	const { data, isLoading, isError, error } = useQuery({
-		queryKey: ['chatHistory'],
-		queryFn: fetchHistory,
+		queryKey: ['chats'],
+		queryFn: fetchChats,
 	})
+
+	console.log(onNewChat)
 
 	return (
 		<div className="flex-1 flex flex-col">
-			<div className="p-4 border-b border-sidebar-border">
-				<Button className="w-full" onClick={onNewChat}>
+			<div className="p-8">
+				<Button className="w-full cursor-pointer" onClick={() => navigate('/chats/new')}>
 					New Chat
 				</Button>
 			</div>
@@ -59,9 +61,9 @@ export default function Sidebar({
 							{data.map((item) => (
 								<Button
 									key={item.id}
-									variant="ghost"
-									className="w-full justify-start text-left h-auto py-2"
+									className="w-full justify-start text-left h-auto py-2 rounded-lg hover:opacity-80 hover:transition-all hover:duration-300 cursor-pointer"
 									aria-label={`Chat: ${item.symptoms}`}
+									onClick={() => navigate(`/chats/${item.id}`)}
 								>
 									<span className="truncate">{item.symptoms}</span>
 								</Button>

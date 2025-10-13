@@ -2,7 +2,7 @@ import { GoogleGenAI } from "@google/genai";
 import { z } from "zod";
 import { protectedProcedure, publicProcedure, router } from "../trpc.js";
 import { queries, chats } from "../schema.js";
-import { eq, and } from 'drizzle-orm'
+import { eq, and, desc } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
 import "dotenv/config"
 
@@ -88,6 +88,139 @@ export const llmRouter = router({
 				const response = await callGeminiChat([
 					{ role: 'user', content: input.symptoms }
 				])
+
+				await ctx.db
+					.insert(queries)
+					.values({
+						chatId: newChat.id,
+						role: 'assistant',
+						content: response.text
+					})
+					.execute()
+
+				return {
+					chat_id: newChat.id,
+					response: response,
+					chatHistory: [
+						{ role: 'user', content: input.symptoms },
+						{ role: 'assistant', content: response.text }
+					]
+				}
+			} catch (error) {
+				console.error("Error starting chat: ", error)
+				throw error
+			}
+		}),
+
+	chat: protectedProcedure
+		.input(z.object({
+			chatId: z.string(),
+			query: z.string().min(10).max(1000)
+		}))
+		.mutation(async ({ input, ctx }) => {
+			try {
+				const existingChat = await ctx.db
+					.select()
+					.from(chats)
+					.where(
+						and(
+							eq(chats.id, input.chatId),
+							eq(chats.userId, ctx.user.id)
+						)
+					)
+					.limit(1)
+					.execute()
+
+				if (!existingChat.length) {
+					throw new Error("Chat not found or access denied")
+				}
+
+				const chatHistory = await ctx.db
+					.select()
+					.from(queries)
+					.where(eq(queries.chatId, input.chatId))
+					.orderBy(desc(queries.createdAt))
+					.execute()
+
+				await ctx.db
+					.insert(queries)
+					.values({
+						chatId: input.chatId,
+						role: 'user',
+						content: input.query
+					})
+					.execute()
+
+				const messages = [
+					...chatHistory,
+					{ role: 'user', content: input.query }
+				]
+
+				const response = await callGeminiChat(messages)
+
+				await ctx.db
+					.insert(queries)
+					.values({
+						chatId: input.chatId,
+						role: 'assistant',
+						content: response.text
+					})
+					.execute()
+
+				return {
+					response: response,
+					chatHistory: [
+						...messages,
+						{ role: 'assistant', content: response.text }
+					]
+				}
+			} catch (error) {
+				console.error("Error in chat: ", error)
+				throw error
+			}
+		}),
+
+	getAllChats: protectedProcedure
+		.query(async ({ ctx }) => {
+			return await ctx.db
+				.select()
+				.from(chats)
+				.where(eq(chats.userId, ctx.user.id))
+				.orderBy(desc(chats.createdAt))
+				.execute()
+		}),
+
+	getChat: protectedProcedure
+		.input(z.object({
+			chatId: z.string()
+		}))
+		.query(async ({ ctx, input }) => {
+			const chat = await ctx.db
+				.select()
+				.from(chats)
+				.where(
+					and(
+						eq(chats.id, input.chatId),
+						eq(chats.userId, ctx.user.id),
+					)
+				)
+				.limit(1)
+				.execute()
+
+			if (!chat || !chat.length) {
+				throw new Error("Chat not found")
+			}
+
+			const messages = await ctx.db
+				.select()
+				.from(queries)
+				.where(eq(queries.chatId, input.chatId))
+				.orderBy(desc(queries.createdAt))
+				.execute()
+
+			return {
+				chat: chat[0],
+				messages: messages
 			}
 		})
 })

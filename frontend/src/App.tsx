@@ -15,11 +15,23 @@ function App() {
 			<AuthProvider>
 				<Router>
 					<Routes>
-						<Route path="/" element={<Navigate to="/dashboard" replace />} />
+						<Route path="/" element={<Navigate to="/chats/new" replace />} />
 						<Route path="/signin" element={<SignIn />} />
 						<Route path="/signup" element={<SignUp />} />
 						<Route
 							path="/dashboard"
+							element={<Navigate to="/chats/new" replace />}
+						/>
+						<Route
+							path="/chats/new"
+							element={
+								<ProtectedRoute>
+									<Dashboard />
+								</ProtectedRoute>
+							}
+						/>
+						<Route
+							path="/chats/:chatId"
 							element={
 								<ProtectedRoute>
 									<Dashboard />

@@ -1,13 +1,14 @@
-import React, { useState } from 'react'
+import React from 'react'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/contexts/AuthContext'
 import { DiagnoseForm } from './DiagnoseForm'
 import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarTrigger, SidebarInset } from '@/components/ui/sidebar'
 import ChatSidebar from './chat/sidebar'
+import { useNavigate } from 'react-router-dom'
 
 export const Dashboard: React.FC = () => {
 	const { user, signOut } = useAuth()
-	const [resetChat, setResetChat] = useState(0)
+	const navigate = useNavigate()
 
 	const handleSignOut = async () => {
 		try {
@@ -18,7 +19,7 @@ export const Dashboard: React.FC = () => {
 	}
 
 	const handleNewChat = () => {
-		setResetChat(prev => prev + 1)
+		navigate('/chats/new')
 	}
 
 	return (
@@ -34,7 +35,7 @@ export const Dashboard: React.FC = () => {
 				</SidebarContent>
 			</Sidebar>
 			<SidebarInset>
-				<header className="bg-background flex shrink-0 items-center gap-2 overflow-hidden border-b px-4">
+				<header className="bg-background flex shrink-0 items-center gap-2 overflow-hidden border-b p-4">
 					<SidebarTrigger />
 					<div className="flex items-center justify-between flex-1">
 						<h1 className="text-xl font-semibold">
@@ -48,6 +49,7 @@ export const Dashboard: React.FC = () => {
 								variant="outline"
 								onClick={handleSignOut}
 								size="sm"
+								className='cursor-pointer'
 							>
 								Sign Out
 							</Button>
@@ -55,7 +57,7 @@ export const Dashboard: React.FC = () => {
 					</div>
 				</header>
 				<main className="flex-1 overflow-auto p-4">
-					<DiagnoseForm resetKey={resetChat} />
+					<DiagnoseForm />
 				</main>
 			</SidebarInset>
 		</SidebarProvider>
