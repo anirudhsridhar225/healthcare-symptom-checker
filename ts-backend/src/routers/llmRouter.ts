@@ -3,6 +3,7 @@ import { z } from "zod";
 import { protectedProcedure, publicProcedure, router } from "../trpc.js";
 import { queries, chats } from "../schema.js";
 import { eq, and } from 'drizzle-orm'
+import { nanoid } from 'nanoid'
 import "dotenv/config"
 
 const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY || "" });
@@ -47,21 +48,6 @@ async function callGeminiChat(messages: Array<{ role: string, content: string }>
 export const llmRouter = router({
 	health: publicProcedure.query(() => ({ status: "ok" })),
 
-	diagnose: protectedProcedure
-		.input(z.object({ symptoms: z.string().min(10).max(1000) }))
-		.mutation(async ({ input, ctx }) => {
-			const res = await callGemini(input.symptoms)
-			await ctx.db
-				.insert(queries)
-				.values({
-					userId: (ctx.user.id),
-					symptoms: input.symptoms,
-				})
-				.execute()
-
-			return { response: res }
-		}),
-
 	testpoint: publicProcedure
 		.input(z.object({ text: z.string() }))
 		.mutation(async ({ input }) => {
@@ -69,79 +55,39 @@ export const llmRouter = router({
 			return { response: res }
 		}),
 
-	chat: protectedProcedure
+	startChat: protectedProcedure
 		.input(z.object({
-			message: z.string().min(1).max(2000),
-			chatHistory: z.array(z.object({
-				role: z.enum(['user', 'assistant']),
-				content: z.string()
-			})).optional().default([])
+			symptoms: z.string().min(10).max(1000)
 		}))
 		.mutation(async ({ input, ctx }) => {
 			try {
-				const messages = [
-					...input.chatHistory,
-					{ role: 'user', content: input.message }
-				]
-
-				const res = await callGeminiChat(messages)
-
-				const existingQuery = await ctx.db
-					.select()
-					.from(queries)
-					.where(
-						and(
-							eq(queries.userId, ctx.user.id),
-							eq(queries.symptoms, input.message)
-						)
-					)
-					.limit(1)
+				const chatId = nanoid()
+				const [newChat] = await ctx.db
+					.insert(chats)
+					.values({
+						id: chatId,
+						userId: ctx.user.id,
+						symptoms: input.symptoms,
+					})
+					.returning({ id: chats.id })
 					.execute()
 
-				let queryId: number;
-
-				if (existingQuery.length > 0 && existingQuery[0]) {
-					queryId = existingQuery[0].id;
-				} else {
-					const [newQuery] = await ctx.db
-						.insert(queries)
-						.values({
-							userId: ctx.user.id,
-							symptoms: input.message
-						})
-						.returning({ id: queries.id })
-						.execute()
-
-					if (!newQuery) {
-						throw new Error("Failed to create new query record.");
-					}
-
-					queryId = newQuery.id;
+				if (!newChat) {
+					throw new Error("Failed to create chat")
 				}
-
-				const allMessages = [
-					...messages,
-					{ role: 'assistant' as const, content: res.text }
-				]
 
 				await ctx.db
-					.insert(chats)
-					.values(
-						allMessages.map(msg => ({
-							queryId: queryId,
-							role: msg.role as 'user' | 'assistant',
-							content: msg.content
-						}))
-					)
+					.insert(queries)
+					.values({
+						chatId: newChat.id,
+						role: 'user',
+						content: input.symptoms,
+					})
 					.execute()
 
-				return {
-					response: res,
-					chatHistory: allMessages
-				}
-			} catch (error) {
-				console.error("Error in chat mutation:", error);
-				throw error;
+				const response = await callGeminiChat([
+					{ role: 'user', content: input.symptoms }
+				])
 			}
-	})
+		})
 })
