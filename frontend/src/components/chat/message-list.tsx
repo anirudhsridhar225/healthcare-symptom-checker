@@ -25,10 +25,10 @@ export default function MessageList({ messages }: { messages?: UIMessage[] }) {
 						className={`flex w-full ${isUser ? "justify-end" : "justify-start"}`}
 					>
 						<div
-							className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-sm prose prose-sm dark:prose-invert text-start
+							className={`max-w-full rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-sm prose prose-sm dark:prose-invert text-start
                 ${isUser
-									? "bg-blue-600 text-white prose-p:my-1 prose-headings:text-white prose-strong:text-white"
-									: "bg-neutral-100 text-neutral-900 border border-neutral-200 prose-p:my-1"}`}
+									? "bg-blue-500 text-white prose-p:my-1 prose-headings:text-white prose-strong:text-white font-semibold tracking-wider text-lg"
+									: "bg-neutral-100 text-neutral-900 border border-neutral-200 prose-p:my-1 tracking-wide font-medium"}`}
 						>
 							<ReactMarkdown
 								components={{

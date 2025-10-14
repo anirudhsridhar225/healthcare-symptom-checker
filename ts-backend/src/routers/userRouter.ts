@@ -1,7 +1,7 @@
 import 'dotenv/config'
 import { eq, desc } from 'drizzle-orm'
 import { router, protectedProcedure, publicProcedure } from '../trpc.js'
-import { user, queries } from '../schema.js'
+import { user, queries, chats } from '../schema.js'
 
 export const userRouter = router({
 	health: publicProcedure.query(() => ({ status: "ok" })),
@@ -10,8 +10,8 @@ export const userRouter = router({
 		.query(async ({ ctx }) => {
 			const recs = await ctx.db
 				.select()
-				.from(queries)
-				.where(eq(queries.userId, ctx.user.id))
+				.from(chats)
+				.where(eq(chats.userId, ctx.user.id))
 				.orderBy(desc(queries.createdAt))
 
 			return { records: recs }

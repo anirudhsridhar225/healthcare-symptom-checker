@@ -37,6 +37,7 @@ export default function ChatInput({
 				className={cn(
 					"flex-1 h-10 rounded-md bg-background border border-input px-3",
 					"placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring",
+					"tracking-wide text-lg"
 				)}
 				placeholder="Describe your symptoms…"
 				aria-label="Message input"

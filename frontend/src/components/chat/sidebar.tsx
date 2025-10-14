@@ -43,19 +43,17 @@ export default function Sidebar({
 		queryFn: fetchChats,
 	})
 
-	console.log(onNewChat)
-
 	return (
-		<div className="flex-1 flex flex-col">
+		<div className="h-full flex flex-col justify-evenly font-montserrat">
 			<div className="p-8">
 				<Button className="w-full cursor-pointer" onClick={() => navigate('/chats/new')}>
 					New Chat
 				</Button>
 			</div>
 
-			<div className="p-4 space-y-4 overflow-y-auto">
+			<div className="p-4 space-y-4 grow flex flex-col">
 				{data && data.length > 0 && (
-					<Card className="bg-sidebar/60 border-sidebar-border p-3">
+					<Card className="bg-sidebar/60 border-sidebar-border p-3 grow">
 						<h2 className="text-sm font-semibold mb-2">Recent Chats</h2>
 						<div className="space-y-1">
 							{data.map((item) => (

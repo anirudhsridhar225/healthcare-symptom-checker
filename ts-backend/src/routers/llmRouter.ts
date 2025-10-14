@@ -8,7 +8,7 @@ import "dotenv/config"
 
 const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY || "" });
 
-const PROMPT = "You are an educational medical assistant. Based on the given symptoms, list possible conditions that I might have and which condition I am most probably afflicted by. List the next steps I should take for the same. Add a disclaimer with all that in mind."
+const PROMPT = "You are an educational medical assistant. Based on the given symptoms, list possible conditions that I might have and which condition I am most probably afflicted by. List the next steps I should take for the same. Add a disclaimer with all that in mind. Try to be as direct and concise as possible with bullet points and the likes. If it is the first prompt that the user is providing then please ask some questions to zero in on the proper condition before general diagnosis."
 
 
 async function callGemini(prompt: string) {

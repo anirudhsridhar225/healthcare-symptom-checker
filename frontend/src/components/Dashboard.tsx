@@ -1,10 +1,10 @@
-import React from 'react'
 import { Button } from '@/components/ui/button'
+import { Sidebar, SidebarContent, SidebarHeader, SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
 import { useAuth } from '@/contexts/AuthContext'
-import { DiagnoseForm } from './DiagnoseForm'
-import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarTrigger, SidebarInset } from '@/components/ui/sidebar'
-import ChatSidebar from './chat/sidebar'
+import React from 'react'
 import { useNavigate } from 'react-router-dom'
+import ChatSidebar from './chat/sidebar'
+import { DiagnoseForm } from './DiagnoseForm'
 
 export const Dashboard: React.FC = () => {
 	const { user, signOut } = useAuth()
@@ -56,7 +56,7 @@ export const Dashboard: React.FC = () => {
 						</div>
 					</div>
 				</header>
-				<main className="flex-1 overflow-auto p-4">
+				<main className="flex-1 overflow-auto p-4 font-montserrat tracking-wide">
 					<DiagnoseForm />
 				</main>
 			</SidebarInset>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { authClient } from '@/lib/auth-client'
 import MessageList from './chat/message-list'
 import ChatInput from './chat/chat-input'
@@ -75,6 +75,7 @@ export const DiagnoseForm: React.FC<{
 	const routeChatId = params.chatId === 'new' ? null : (params.chatId ?? null)
 	const [messages, setMessages] = useState<ChatMessage[]>([])
 	const [chatId, setChatId] = useState<string | null>(routeChatId)
+	const queryClient = useQueryClient()
 
 	useEffect(() => {
 		let cancelled = false
@@ -137,6 +138,8 @@ export const DiagnoseForm: React.FC<{
 					...prev,
 					{ role: 'assistant', content: payload.response.text, timestamp: new Date() }
 				]))
+
+				queryClient.invalidateQueries({ queryKey: ['chats'] })
 			} else {
 				const payload = data.payload as ChatResponse
 				setMessages(prev => ([
@@ -165,7 +168,7 @@ export const DiagnoseForm: React.FC<{
 	}))
 
 	return (
-		<div className="flex flex-col h-full max-w-4xl mx-auto">
+		<div className="flex flex-col h-full overflow-y-auto max-w-4xl mx-auto">
 			<div className="flex-1 overflow-y-auto p-4">
 				<MessageList messages={uiMessages} />
 			</div>
