@@ -5,6 +5,7 @@ import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { SignIn } from '@/components/auth/SignIn'
 import { SignUp } from '@/components/auth/SignUp'
 import { Dashboard } from '@/components/Dashboard'
+import Landing from '@/components/Landing'
 import './App.css'
 
 const queryClient = new QueryClient()
@@ -15,7 +16,7 @@ function App() {
 			<AuthProvider>
 				<Router>
 					<Routes>
-						<Route path="/" element={<Navigate to="/chats/new" replace />} />
+						<Route path="/" element={<Landing />} />
 						<Route path="/signin" element={<SignIn />} />
 						<Route path="/signup" element={<SignUp />} />
 						<Route

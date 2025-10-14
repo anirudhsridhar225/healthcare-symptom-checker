@@ -5,29 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1760204444509,
-      "tag": "0000_rich_ultimatum",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1760283182388,
-      "tag": "0001_closed_wraith",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1760381512994,
-      "tag": "0002_aromatic_sue_storm",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1760381790906,
-      "tag": "0003_same_viper",
+      "when": 1760464769088,
+      "tag": "0000_nostalgic_princess_powerful",
       "breakpoints": true
     }
   ]

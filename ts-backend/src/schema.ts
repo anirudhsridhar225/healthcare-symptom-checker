@@ -15,18 +15,18 @@ export const user = pgTable("user", {
 
 export const roleEnum = pgEnum("role", ['user', 'assistant'])
 
+export const chats = pgTable('chats', {
+	id: text('id').primaryKey(),
+	userId: text('user_id').references(() => user.id).notNull(),
+	symptoms: text('symptoms').notNull(),
+	createdAt: timestamp('created_at').defaultNow().notNull(),
+})
+
 export const queries = pgTable('queries', {
 	id: serial('id').primaryKey(),
 	chatId: text('chat_id').references(() => chats.id).notNull(),
 	role: roleEnum('role').notNull(),
 	content: text('content').notNull(),
-	createdAt: timestamp('created_at').defaultNow().notNull(),
-})
-
-export const chats = pgTable('chats', {
-	id: text('id').primaryKey(),
-	userId: text('user_id').references(() => user.id).notNull(),
-	symptoms: text('symptoms').notNull(),
 	createdAt: timestamp('created_at').defaultNow().notNull(),
 })
 
