@@ -5,6 +5,7 @@ import { authClient } from '@/lib/auth-client'
 import MessageList from './chat/message-list'
 import ChatInput from './chat/chat-input'
 import { useNavigate, useParams } from 'react-router-dom'
+import { endpoint } from '../../endpoint'
 
 type ChatMessage = {
 	role: 'user' | 'assistant'
@@ -36,7 +37,7 @@ type ChatResponse = {
 
 const sendMessage = async (data: MutationInput): Promise<{ kind: 'start' | 'chat'; payload: StartChatResponse | ChatResponse }> => {
 	if (!data.chatId) {
-		const response = await authClient.$fetch('http://localhost:4000/api/trpc/llm.startChat?batch=1', {
+		const response = await authClient.$fetch(`${endpoint}/api/trpc/llm.startChat?batch=1`, {
 			method: 'POST',
 			headers: {
 				'content-type': 'application/json',
@@ -50,7 +51,7 @@ const sendMessage = async (data: MutationInput): Promise<{ kind: 'start' | 'chat
 		const json = response.data[0].result.data.json as StartChatResponse
 		return { kind: 'start', payload: json }
 	}
-	const response = await authClient.$fetch('http://localhost:4000/api/trpc/llm.chat?batch=1', {
+	const response = await authClient.$fetch(`${endpoint}/api/trpc/llm.chat?batch=1`, {
 		method: 'POST',
 		headers: {
 			'content-type': 'application/json',
@@ -83,7 +84,7 @@ export const DiagnoseForm: React.FC<{
 			if (routeChatId) {
 				try {
 					const response = await authClient.$fetch(
-						`http://localhost:4000/api/trpc/llm.getChat?batch=1&input=${encodeURIComponent(
+						`${endpoint}/api/trpc/llm.getChat?batch=1&input=${encodeURIComponent(
 							JSON.stringify({ 0: { json: { chatId: routeChatId } } })
 						)}`,
 						{

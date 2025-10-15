@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { useQuery } from '@tanstack/react-query'
 import { authClient } from '@/lib/auth-client'
+import { endpoint } from '../../../endpoint'
 
 type ChatItem = {
 	id: string
@@ -20,7 +21,7 @@ type ChatsResponse = {
 }
 
 const fetchChats = async (): Promise<ChatItem[]> => {
-	const response = await authClient.$fetch('http://localhost:4000/api/trpc/llm.getAllChats?batch=1', {
+	const response = await authClient.$fetch(`${endpoint}/api/trpc/llm.getAllChats?batch=1`, {
 		method: 'GET',
 		headers: {
 			'content-type': 'application/json',
@@ -42,6 +43,8 @@ export default function Sidebar({
 		queryKey: ['chats'],
 		queryFn: fetchChats,
 	})
+
+	console.log(onNewChat)
 
 	return (
 		<div className="h-full flex flex-col justify-evenly font-montserrat">

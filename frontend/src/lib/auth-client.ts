@@ -1,5 +1,6 @@
 import { createAuthClient } from 'better-auth/react'
+import { endpoint } from '../../endpoint'
 
 export const authClient = createAuthClient({
-	baseURL: "http://localhost:4000/api/auth"
+	baseURL: `${endpoint}/api/auth`
 })
